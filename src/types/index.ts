@@ -50,9 +50,7 @@ export type IProductCard = Pick<IProduct, 'image' | 'title' | 'category' | 'pric
 export type IProductPopup = Pick<IProduct, 'image' | 'title' | 'category' | 'price' | 'description'> //попап товара
     
 export type IProductToAdd = Pick<IProduct, 'id' | 'title' | 'price' > //товар в корзине
-     
-export type IProductOrderPrice = Pick<IProduct, 'price'> //после оформления заказа сколько списано
-    
+         
 export type IOrderProducts = Pick<IOrder, 'products'> // список товаров в корзине
 
 export type IOrderFormWtihPaymentMethod = Pick<IUserData, 'payment' | 'address'> // первая форма

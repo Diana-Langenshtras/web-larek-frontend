@@ -44,21 +44,21 @@ yarn build
 
 Данные, полученные с сервера
 ```
-export interface IData {
+interface IData {
     total: number;
     products: IProduct[];
 }
 ```
 Каталог товаров
 ```
-export interface IProductsData {
+interface IProductsData {
     products: IProduct[];
     preview: string | null; 
 }
 ```
 Товар
 ```
-export interface IProduct {
+interface IProduct {
     id: string;
     description: string;
     image: string;
@@ -69,7 +69,7 @@ export interface IProduct {
 ```
 Заказ
 ```
-export interface IOrder { 
+interface IOrder { 
     data: IUserData;
     products: IBasket; 
     total: number;
@@ -77,14 +77,14 @@ export interface IOrder {
 ```
 Ответ сервера
 ```
-export interface IOrderResult {
+interface IOrderResult {
     id: string;
     total: number;
 }
 ```
 Личные данные пользователя
 ```
-export interface IUserData {
+interface IUserData {
     payment: string;
     address: string;
     email: string;
@@ -93,38 +93,34 @@ export interface IUserData {
 ```
 Корзина
 ```
-export interface IBasket {
+interface IBasket {
     products: IProduct[];
     total: number;
 }
 ```
 Карточка продукта на главной странице
 ```
-export type IProductCard = Pick<IProduct, 'image' | 'title' | 'category' | 'price'>
+type IProductCard = Pick<IProduct, 'image' | 'title' | 'category' | 'price'>
  ```
 Карточка продукта в попапе
  ```   
-export type IProductPopup = Pick<IProduct, 'image' | 'title' | 'category' | 'price' | 'description'> 
+type IProductPopup = Pick<IProduct, 'image' | 'title' | 'category' | 'price' | 'description'> 
  ```
 Карточка продукта в корзине   
  ```
-export type IProductToAdd = Pick<IProduct, 'id' | 'title' | 'price' > 
-```
-Итоговая сумма заказа
-```  
-export type IProductOrderPrice = Pick<IProduct, 'price'>
+type IProductToAdd = Pick<IProduct, 'id' | 'title' | 'price' > 
 ```
 Список товаров в корзине
 ```    
-export type IOrderProducts = Pick<IOrder, 'products'> 
+type IOrderProducts = Pick<IOrder, 'products'> 
 ```
 Форма с выбором оплаты и вводом адресса
 ```
-export type IOrderFormWtihPaymentMethod = Pick<IUserData, 'payment' | 'address'>
+type IOrderFormWtihPaymentMethod = Pick<IUserData, 'payment' | 'address'>
 ```
 Форма с вводом почты и телефона
 ```
-export type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
+type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
 ```
 
 ## Архитектура приложения
