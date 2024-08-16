@@ -1,15 +1,13 @@
 //данные, полученные с сервера
 export interface IData {
     total: number;
-    products: IProduct[];
+    items: IProduct[];
 }
 
 //выводимые карточки
 export interface IProductsData {
     products: IProduct[];
     preview: string | null; //указатель на карточку
-    addProduct(product: IProduct): void;
-	deleteProduct(productId: string, payload: Function | null): void;
 	getProduct(productId: string): IProduct;
 }
 
@@ -23,26 +21,39 @@ export interface IProduct {
 }
 
 export interface IOrder { 
-    data: IUserData;
-    products: IBasket; 
-    total: number;
+    userData: IUser;
+    basket: IBasket; 
 }
-
+//какой запрос ожидает сервер
 export interface IOrderResult {
-    id: string;
-    total: number;
+    payment: string,
+    email: string,
+    phone: string,
+    address: string,
+    total: number,
+    items: string[],
 }
 
-export interface IUserData {
+export interface IUser {
     payment: string;
     address: string;
     email: string;
     phone: string;
 }
 
+export interface IUserData{
+	getUserInfo(): IUser;
+	setUserInfo(userData: IUser): void;
+	checkUserValidation(data: Record<keyof IUser, string>): boolean;
+}
+
 export interface IBasket {
     products: IProduct[];
     total: number;
+    addProduct(product: IProduct): void;
+	deleteProduct(productId: string, payload: Function | null): void;
+    getProduct(productId: string): IProduct;
+    cleanBasket(): void;
 }
 
 export type IProductCard = Pick<IProduct, 'image' | 'title' | 'category' | 'price'> //карточка товара на главной странице
@@ -51,8 +62,16 @@ export type IProductPopup = Pick<IProduct, 'image' | 'title' | 'category' | 'pri
     
 export type IProductToAdd = Pick<IProduct, 'id' | 'title' | 'price' > //товар в корзине
          
-export type IOrderProducts = Pick<IOrder, 'products'> // список товаров в корзине
+//export type IOrderProducts = Pick<IOrder, 'products'> // список товаров в корзине
 
-export type IOrderFormWtihPaymentMethod = Pick<IUserData, 'payment' | 'address'> // первая форма
+export type IOrderFormWtihPaymentMethod = Pick<IUser, 'payment' | 'address'> // первая форма
 
-export type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'> // вторая форма
+export type IOrderFormWtihPersonalData = Pick<IUser, 'email' | 'phone'> // вторая форма
+
+export type ApiPostMethods = 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+export interface IApi {
+    baseUrl: string;
+    get<T>(url: string): Promise<T>;
+    post<T>(url: string, data: object, method?: ApiPostMethods): Promise<T>;
+}

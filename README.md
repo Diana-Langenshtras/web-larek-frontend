@@ -70,25 +70,34 @@ interface IProduct {
 Заказ
 ```
 interface IOrder { 
-    data: IUserData;
-    products: IBasket; 
-    total: number;
+    userData: IUser;
+    basket: IBasket; 
 }
 ```
-Ответ сервера
+Для post запроса на сервер
 ```
 interface IOrderResult {
-    id: string;
-    total: number;
+    payment: string,
+    email: string,
+    phone: string,
+    address: string,
+    total: number,
+    items: string[],
 }
 ```
 Личные данные пользователя
 ```
-interface IUserData {
+interface IUser {
     payment: string;
     address: string;
     email: string;
     phone: string;
+}
+
+interface IUserData{
+	getUserInfo(): IUser;
+	setUserInfo(userData: IUser): void;
+	checkUserValidation(data: Record<keyof IUser, string>): boolean;
 }
 ```
 Корзина
@@ -96,6 +105,10 @@ interface IUserData {
 interface IBasket {
     products: IProduct[];
     total: number;
+    addProduct(product: IProduct): void;
+	deleteProduct(productId: string, payload: Function | null): void;
+    getProduct(productId: string): IProduct;
+    cleanBasket(): void;
 }
 ```
 Карточка продукта на главной странице
@@ -116,12 +129,23 @@ type IOrderProducts = Pick<IOrder, 'products'>
 ```
 Форма с выбором оплаты и вводом адресса
 ```
-type IOrderFormWtihPaymentMethod = Pick<IUserData, 'payment' | 'address'>
+type IOrderFormWtihPaymentMethod = Pick<IUser, 'payment' | 'address'>
 ```
 Форма с вводом почты и телефона
 ```
-type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
+type IOrderFormWtihPersonalData = Pick<IUser, 'email' | 'phone'>
 ```
+Методы и интерфейса Api
+```
+type ApiPostMethods = 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+interface IApi {
+    baseUrl: string;
+    get<T>(url: string): Promise<T>;
+    post<T>(url: string, data: object, method?: ApiPostMethods): Promise<T>;
+}
+```
+
 
 ## Архитектура приложения
 Код приложения разделен на лои согласно парадигме MVP:
@@ -147,15 +171,13 @@ type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
 ### Слой данных
 #### Класс ProductsData
 Класс отвечает за хранение и логику работы с каталогом товаров.\
-Конструктор класса принимает инстант брокера событий\
+Конструктор класса принимает инстант брокера событий.\
 В полях класса хранятся следующие данные:
 - _products: IProduct[] - массив объектов карточек продуктов
 - _preview: string | null - id карточки, выбранной для просмотра в модальном окне
 - events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Так же класс предоставляет набор методов для взаимодействия с этими данными.
-- addProduct(product: IProduct): void - добавляет товар в начало массива
-- deleteProduct(productId: string, payload: Function | null = null): void - удаляет товар из массива. Если передан колбэк, то выполняет его после удаления, если нет, то вызывает событие изменения массива.
 - getProduct(productId: string): IProduct - возвращает товар по его id
 - а так-же сеттеры и геттеры для сохранения и получения данных из полей класса
 
@@ -169,8 +191,9 @@ type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
 - phone: string - телефон пользователя
 
 Так же класс предоставляет набор методов для взаимодействия с этими данными.
-- updateUserInfo(userData: IUserData): void - обновляем данные пользователя
-- checkValidation(data: Record<keyof TUserPublicInfo, string>): boolean - проверяет объект с данными пользователя на валидность
+- setUserInfo(userData: IUser): void - записываем данные пользователя
+- getUserInfo(): IUser - получаем данные пользователя
+- checkUserValidation(data: Record<keyof IUser, string>): boolean - проверяет объект с данными пользователя на валидность
 
 #### Класс BasketData
 Класс отвечает за хранение и логику работы с товарами, добавленными в корзину.\
@@ -185,33 +208,38 @@ type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
 - addProduct(product: IProduct): void - добавляет товар в начало массива
 - deleteProduct(productId: string, payload: Function | null = null): void - удаляет товар из массива. Если передан колбэк, то выполняет его после удаления, если нет, то вызывает событие изменения массива.
 - getProduct(productId: string): IProduct - возвращает товар по его id
+- cleanBasket(): void - очищает корзину
 - а так-же сеттеры и геттеры для сохранения и получения данных из полей класса
 
 #### Класс OrderData
 Класс отвечает за хранение и логику работы с данными заказа.\
 Конструктор класса принимает инстант брокера событий\
 В полях класса хранятся следующие данные:
-- _basket: IProduct[] - массив товаров в корзине
-- _userdata: IUserData - данные о пользователе
-- _total: number - сумма товаров в корзине
+- _basket: IBasket - массив товаров в корзине
+- _userData: IUser - данные о пользователе
 - events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
 
 Так же класс предоставляет набор методов для взаимодействия с этими данными.
 - cleanOrder(): void - очищает данные заказа
-- addOrderUserData(userData: IUserData):void - добавляем данные о пользователе в заказ
-- addOrderBasketData(products: IProduct[]):void - добавляем данные о корзине в заказ
-- checkValidation(data: Record<keyof TUserPublicInfo, string>): boolean - проверяет объект с данными пользователя на валидность
+- setOrderField(field: keyof IUser, value: string): void - получает и записывает данные с первой формы
+- setContactsField(field: keyof IUser, value: string): void - получает и записывает данные со второй формы
+- checkOrderData(): void - проверяет данные первой формы
+- checkContactsData(): void - проверяет данные второй формы
 - а так-же сеттеры и геттеры для сохранения и получения данных из полей класса
 
 ### Слой представления
+
+#### Базовый Класс Component
+Класс является дженериком и родителем всех компонентов слоя представления. В дженерик принимает тип объекта, в котором данные будут передаваться в метод render для отображения данных в компоненте. В конструктор принимает элемент разметки, являющийся основным родительским контейнером компонента. Содержит метод render, отвечающий за сохранение полученных в параметре данных в полях компонентов через их сеттеры, возвращает обновленный контейнер компонента.
+
 #### Класс Modal
 Реализует единое модальное окно с различным отображаемым контентом. Так же предоставляет методы `open` и `close` для управления отображением модального окна. Устанавливает слушатели на клавиатуру, для закрытия модального окна по Esc, на клик в оверлей и кнопку-крестик для закрытия попапа.  
 
 - constructor(selector: string, events: IEvents) Конструктор принимает селектор, по которому в разметке страницы будет идентифицировано модальное окно и экземпляр класса `EventEmitter` для возможности инициации событий.
 
 Поля класса
-- modal: HTMLElement - элемент модального окна
-- events: IEvents - брокер событий
+- _closeButton - кнопка закрытия модального окна
+- _content - отображаемый контент
 
 Методы класса:
 - open(): void - открытие модального окна.
@@ -224,29 +252,59 @@ type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
 
 Поля класса
 - submitButton: HTMLButtonElement - кнопка подтверждения
-- _form: HTMLFormElement - элемент формы
-- formName: string - значение атрибута name формы
-- inputs: NodeListOf<HTMLInputElement> - коллекция всех полей ввода формы
-- errors: Record<string, HTMLElement> - объект хранящий все элементы для вывода ошибок под полями формы с привязкой к атрибуту name инпутов
+- errorSpan - надпись с ошибкой
 
 Методы:
-- setValid(isValid: boolean): void - изменяет активность кнопки подтверждения
-- getInputValues(): Record<string, string> - возвращает объект с данными из полей формы, где ключ - name инпута, значение - данные введенные пользователем
-- setInputValues(data: Record<string, string>): void - принимает объект с данными для заполнения полей формы
-- setError(data: { field: string, value: string, validInformation: string }): void - принимает объект с данными для отображения или сокрытия текстов ошибок под полями ввода
-- showInputError (field: string, errorMessage: string): void - отображает полученный текст ошибки под указанным полем ввода
-- hideInputError (field: string): void - очищает текст ошибки под указанным полем ввода
-- close (): void - очищает поля формы и деактивирует кнопку сохранения
-- get form: HTMLElement - геттер для получения элемента формы
-- checkValidation - проверяет валидность формы
+- onInputChange(field: keyof T, value: string): void - генерирует событие при изменении инпутов
+- protected onButtonChange(field: string, value: string): void - генерирует событие при клике на кнопку в форме
 
-#### Класс Product
+#### Класс Card
 Отвечает за отображение товара, задавая в товаре данные названия, описания, изображения, цены. Класс используется для отображения товара на главной странице, в модальном окне, в корзине. В конструктор класса передается DOM элемент темплейта, что позволяет при необходимости формировать карточки товаров разных вариантов верстки. В классе устанавливаются слушатели на все интерактивные элементы, в результате взаимодействия с которыми пользователя генерируются соответствующие события.\
 Поля класса содержат элементы разметки элементов карточки. Конструктор, кроме темплейта принимает экземпляр `EventEmitter` для инициации событий.\
+
+Поля класса
+- events: IEvents - экземпляр класса `EventEmitter` для инициации событий при изменении данных.
+- basketButton?: HTMLButtonElement - кнопка корзины
+- closeButton?: HTMLButtonElement - кнопка закрытия
+- deleteButton?: HTMLButtonElement - кнопка удаления из корзины
+- cardImage?: HTMLImageElement - картинка товара
+- cardTitle: HTMLElement - название товара
+- cardPrice: HTMLElement - цена товара
+- cardDescription?: HTMLElement - описание товара
+- cardCategory?: HTMLElement - категория товара
+- cardId: string - id товара
+- cardIndex?: HTMLElement - индекс товара в корзине 
+
 Методы:
-- setData(productData: IProduct): void - заполняет атрибуты элементов товара данными.
-- render(): HTMLElement - метод возвращает полностью заполненную карточку товара с установленными слушателями
-- геттер id возвращает уникальный id товара
+- deleteCard(): void - удаляет карточку
+- а так-же сеттеры и геттеры для сохранения и получения данных из полей класса
+
+#### Класс Success
+Отвечает за отображение подверждения заказаж
+Методы:
+- сеттеры и геттеры для сохранения и получения данных из полей класса
+
+#### Класс CardsContainer
+Отвечает за отображение коллекции товаров. 
+
+Поля класса
+- _catalog: HTMLElement - коллекция товаров 
+
+Методы:
+- сеттеры и геттеры для сохранения и получения данных из полей класса
+
+#### Класс Basket
+Отвечает за отображение товаров в корзине. 
+
+Поля класса
+- _list: HTMLElement - список товаров 
+- _total: HTMLElement - количество товаров 
+- _button: HTMLElement - кнопка "Оформить" в корзине 
+- _price: HTMLElement - цена товаров 
+
+Методы:
+- setActive(value: boolean): void - смена состояния кнопки корзины
+- сеттеры и геттеры для сохранения и получения данных из полей класса
 
 ### Слой коммуникации
 
@@ -260,18 +318,21 @@ type IOrderFormWtihPersonalData = Pick<IUserData, 'email' | 'phone'>
 
 *Список всех событий, которые могут генерироваться в системе:*\
 *События изменения данных (генерируются классами моделями данных)*
+- `initialData:loaded` - данные с сервера получены
 - `user:changed` - изменение данных пользователя
-- `products:changed` - изменение массива товаров
 - `product:selected` - изменение открываемой в модальном окне карточки товара
-- `product:previewClear` - необходима очистка данных выбранной для показа в модальном окне карточки товара
 
 *События, возникающие при взаимодействии пользователя с интерфейсом (генерируются классами, отвечающими за представление)*
+- `products:changed` - изменение массива товаров в корзине
 - `product:select` - выбор карточки товара для отображения в модальном окне
 - `product:delete` - выбор карточки товара для удаления из корзины
-- `edit-payment-method:input` - изменение данных в форме со способом оплаты и адресом пользователя
-- `edit-personal-data:input` - изменение данных в форме с телефоном и email'ом пользователя
-- `edit-user-data:submit` - сохранение данных пользователя в модальном окне
-- `edit-payment-method:validation` - событие, сообщающее о необходимости валидации формы со способом оплаты и адресом пользователя
-- `edit-personal-data:validation` - событие, сообщающее о необходимости валидации формы с телефоном и email'ом пользователя
+- `product:add` - выбор карточки товара для добавления в корзину
+- `modal:open` - открытие модального окна
+- `modal:close` - закрытие модального окна
+- `{название формы}.{название поля}:change` - изменение поля формы
+- `{название формы}: submit` - переход к следующему шагу при оформлении заказа
+- `order:open` - открытие первой формы
+- `basket:open` - открытие корзины
+
 
 
