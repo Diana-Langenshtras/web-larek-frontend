@@ -55,8 +55,10 @@ const success = new Success(cloneTemplate(successTemplate),  {
 });
 
 // Получаем карточки с сервера
-Promise.all([api.getProducts()])
-    .then(([initialCards]) => {
+const promise = api.getProducts();
+
+promise
+    .then((initialCards) => {
         console.log(initialCards.items)
         productsData.products = initialCards.items;
         events.emit('initialData:loaded');
@@ -75,9 +77,10 @@ events.on('initialData:loaded', () => {
 });
 
 events.on('product:select', (data: { card: Card }) => {
-    const { card } = data;       
+    const { card } = data;  
     const productPreviewData = productsData.getProduct(card.id);       
     const cardPreview = new Card(cloneTemplate(cardPreviewTemplate), events); 
+    if (basketData.getProduct(card.id)) cardPreview.setDisabledBasketButton(true);
     modal.render({
         content: cardPreview.render(productPreviewData)
     })
@@ -85,9 +88,16 @@ events.on('product:select', (data: { card: Card }) => {
 
 events.on('product:add', (data: { card: Card }) => {
     const { card } = data; 
-    const basketItemData = productsData.getProduct(card.id);
-      
+    const basketItemData = productsData.getProduct(card.id);     
+    const cardPreview = new Card(cloneTemplate(cardPreviewTemplate), events); 
     basketData.addProduct(basketItemData);
+    if (basketData.getProduct(card.id)){ 
+        cardPreview.setDisabledBasketButton(true);
+        modal.render({
+            content: cardPreview.render(basketItemData)
+        })
+    }
+    
 });
 
 events.on('products:changed', () => {
@@ -144,31 +154,33 @@ events.on('order:submit', () => {
 
 events.on('contacts:submit', () => {     
     success.total = basketData.total;
-    modal.render({
-        content: success.render({})
-    });
     const items: string[] = [];
     basketData.products.map(product =>{
         if (product.price !== null) items.push(product.id);
-    }
-    )
-    Promise.all([api.setProducts({
+    })
+    const promisePost = api.setProducts({
         payment: orderData.userData.payment,
         email: orderData.userData.email,
         phone: orderData.userData.phone,
         address: orderData.userData.address,
         total: basketData.total,
         items: items,
-    })])
-    .then(([data]) => {
+    });
+    promisePost
+    .then((data) => {
         orderData.cleanOrder();
         basketData.cleanBasket();
+        formContacts.cleanForm();
+        formPayment.cleanForm();
         console.log(data)
+        modal.render({
+            content: success.render({})
+        });
       //  events.emit('initialData:loaded');
     })
     .catch((err) => {
         console.error(err);
-});
+    });
 });
     
 events.on(/^contacts\..*:change/, (data: { field: keyof IUser, value: string }) => {

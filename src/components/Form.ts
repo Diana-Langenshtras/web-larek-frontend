@@ -21,10 +21,12 @@ export class Form<T> extends Component<IFormState> {
         this.container.addEventListener('click', (event: MouseEvent) => {
             const target = event.target as HTMLButtonElement;
             if (target.classList.contains('button_alt')) {
-                    const value = target.textContent || ''; 
-                     this.onButtonChange('payment', value);
-                 }
-            });
+                this.cleanButton();
+                target.classList.add('button_alt-active');
+                const value = target.textContent || ''; 
+                this.onButtonChange('payment', value);
+            }
+        });
 
         this.container.addEventListener('input', (e: Event) => {
             const target = e.target as HTMLInputElement;
@@ -68,4 +70,14 @@ export class Form<T> extends Component<IFormState> {
         Object.assign(this, inputs);
         return this.container;
     }   
+
+    cleanForm(){
+        this.cleanButton();
+        this.container.reset();
+    }
+
+    cleanButton(){
+        const buttons = this.container.querySelectorAll('.button_alt');
+        buttons.forEach((button) => button.classList.remove('button_alt-active'));
+    }
 }

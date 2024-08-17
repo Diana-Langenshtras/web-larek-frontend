@@ -39,7 +39,7 @@ export class BasketData implements IBasket {
     }
 
     addProduct(product: IProduct): void {
-        if (!this._products.includes(product))
+        if (!this._products.includes(product) && product.price !== null)
         {
             this._products = [product, ...this._products]
             this.events.emit('products:changed')

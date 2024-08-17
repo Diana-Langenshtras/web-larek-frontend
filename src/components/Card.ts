@@ -1,5 +1,5 @@
 import { IProductsData, IUser, IProduct, IProductCard } from '../types';
-import { CDN_URL } from '../utils/constants';
+import { CDN_URL, colors } from '../utils/constants';
 import { cloneTemplate } from '../utils/utils';
 import { IEvents } from './base/events';
 import { Component } from './base/Component';
@@ -48,7 +48,7 @@ export class Card extends Component<IProduct> {
         if (this.basketButton)
         {
             this.basketButton.addEventListener('click', () =>
-                this.events.emit('product:add', { card: this })
+                    this.events.emit('product:add', { card: this })
             );
         }
 	}
@@ -85,6 +85,8 @@ export class Card extends Component<IProduct> {
     set category (category: string) {
 		if (this.cardCategory) {
             this.cardCategory.textContent = category;
+            this.cardCategory.classList.remove('card__category_other');
+            this.cardCategory.classList.add(colors[category as keyof typeof colors]);
         } 
 	}
 
@@ -106,4 +108,8 @@ export class Card extends Component<IProduct> {
 		this.container.remove();
 		this.container = null;
 	}
+
+    setDisabledBasketButton(value: boolean){
+        this.setDisabled(this.basketButton, value);
+    }
 }
